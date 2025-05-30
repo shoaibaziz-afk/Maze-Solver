@@ -66,8 +66,7 @@ class Cell:
             self.window_width = self.__win.get_width()
             self.window_height = self.__win.get_height()
         
-            
-        
+                
     def draw(self, x1, y1, x2, y2):
         if self.__win is None:
             return
@@ -145,6 +144,7 @@ class Maze:
         self.__create_cells()
         self.__break_entrance_and_exit()
         self.__break_walls_r(0, 0)
+        self.__reset_cells_visited()
         
     def __create_cells(self):
         self.__cells = []
@@ -212,12 +212,50 @@ class Maze:
                 self.__cells[i][j].has_bottom_wall = False
                 self.__cells[next_i][next_j].has_top_wall = False
             self.__break_walls_r(next_i, next_j)
-            continue
+            
+        
+        
+    def __reset_cells_visited(self):
+        for col in self.__cells:
+            for cell in col:
+                cell.visited = False
+                
+    def _solve_r(self, i, j):
+        self._animate()
+        self.__cells[i][j].visited = True
+    
+        if i == self.__num_cols - 1 and j == self.__num_rows - 1:
+            return True
+    
+        directions = [
+            (i-1, j, "left"),
+            (i+1, j, "right"), 
+            (i, j-1, "up"),
+            (i, j+1, "down")
+        ]
+    
+        for new_i, new_j, direction in directions:
+            if 0 <= new_i < self.__num_cols and 0 <= new_j < self.__num_rows:
+                if ((direction == "left" and not self.__cells[i][j].has_left_wall and not self.__cells[new_i][new_j].visited) or
+                    (direction == "right" and not self.__cells[i][j].has_right_wall and not self.__cells[new_i][new_j].visited) or
+                    (direction == "up" and not self.__cells[i][j].has_top_wall and not self.__cells[new_i][new_j].visited) or
+                    (direction == "down" and not self.__cells[i][j].has_bottom_wall and not self.__cells[new_i][new_j].visited)):
+                    
+                    self.__cells[i][j].draw_move(self.__cells[new_i][new_j])
+                    if self._solve_r(new_i, new_j):
+                        return True
+                    self.__cells[i][j].draw_move(self.__cells[new_i][new_j], undo=True)
+    
+        return False
+
+    def solve(self):
+        return self._solve_r(0, 0)  
                                
 if __name__ == "__main__":
     win = Window(800, 600)
     point_1 = Point(100, 100)
     point_2 = Point(200, 200)
     cell = Cell(win)
-    maze = Maze(50, 50, 10, 14, 50, 50, win)
+    maze = Maze(50, 50, 10, 13, 50, 50, win)
+    maze.solve()
     win.wait_for_close()
